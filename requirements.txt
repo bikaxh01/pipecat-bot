@@ -1,1 +1,1 @@
-pipecat-ai[google,silero,deepgram,runner]>=0.0.79
+pipecat-ai[google,sarvam,deepgram,runner]>=0.0.79
