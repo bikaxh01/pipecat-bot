@@ -16,9 +16,6 @@ from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
 from pipecat.serializers.exotel import ExotelFrameSerializer
 from pipecat.services.sarvam.tts import SarvamTTSService
-from pipecat.services.deepgram.stt import DeepgramSTTService
-from pipecat.services.google.llm import GoogleLLMService
-from pipecat.services.openai.llm import OpenAILLMService
 from pipecat.transports.network.fastapi_websocket import (
     FastAPIWebsocketParams,
     FastAPIWebsocketTransport,
@@ -29,9 +26,18 @@ from pipecat.services.gemini_multimodal_live.gemini import (
     InputParams,
     GeminiMultimodalModalities,
 )
+
+from pipecat.services.openai_realtime_beta import (
+    InputAudioNoiseReduction,
+    InputAudioTranscription,
+    OpenAIRealtimeBetaLLMService,
+    SemanticTurnDetection,
+    SessionProperties,
+)
+
 from pipecat.adapters.schemas.tools_schema import ToolsSchema
 import tools
-from prompt import EN_PROMPT,HI_PROMPT
+from prompt import PROMPT
 
 load_dotenv(override=True)
 
@@ -75,10 +81,30 @@ async def run_bot(
             api_key=os.getenv("GEMINI_API_KEY"),
             model="models/gemini-2.5-flash-live-preview",
             
-            params=InputParams(modalities=GeminiMultimodalModalities.TEXT),
-            system_instruction=EN_PROMPT if language == "en" else HI_PROMPT ,
+            # params=InputParams(modalities=GeminiMultimodalModalities.TEXT),
+            # system_instruction=EN_PROMPT if language == "en" else HI_PROMPT ,
+            system_instruction=PROMPT  ,
             tools=tools_schema,
+            voice_id="Zephyr"
         )
+
+    # session_properties = SessionProperties(
+    #     input_audio_transcription=InputAudioTranscription(),
+    #     # modalities=["audio"],
+    #     turn_detection=SemanticTurnDetection(),
+      
+    #     # instructions=EN_PROMPT if language == "en" else HI_PROMPT ,
+    #     instructions=EN_PROMPT ,
+    # )
+     
+     
+    # llm = OpenAIRealtimeBetaLLMService(
+    #     api_key=os.getenv("OPENAI_API_KEY"),
+    #     session_properties=session_properties,
+    #     start_audio_paused=False,
+    #     model="gpt-realtime-2025-08-28"
+    #     # model="gpt-4o-mini-realtime-preview-2024-12-17"
+    # )
 
         # register handlers with the LLM service
     llm.register_function("get_order_details", tools._handle_get_order)
@@ -114,7 +140,9 @@ async def run_bot(
             },
         ]
     
+      # For Gemini
     context = OpenAILLMContext(messages)
+    # context = OpenAILLMContext(messages,tools= tools_schema)
     context_aggregator = llm.create_context_aggregator(context)
 
     # rtvi = RTVIProcessor(config=RTVIConfig(config=[]))
@@ -125,7 +153,7 @@ async def run_bot(
             transport.input(),  # Websocket input from client
             context_aggregator.user(),
             llm,  # LLM
-            tts,  # Text-To-Speech
+            # tts,  # Text-To-Speech
             transport.output(),  # Websocket output to client
             context_aggregator.assistant(),
         ]
