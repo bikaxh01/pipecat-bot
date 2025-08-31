@@ -79,7 +79,7 @@ async def run_bot(
     
     llm = GeminiMultimodalLiveLLMService(
             api_key=os.getenv("GEMINI_API_KEY"),
-            model="models/gemini-2.5-flash-live-preview",
+            model="models/gemini-2.0-flash-live-001",
             
             # params=InputParams(modalities=GeminiMultimodalModalities.TEXT),
             # system_instruction=EN_PROMPT if language == "en" else HI_PROMPT ,
