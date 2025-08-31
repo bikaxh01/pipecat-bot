@@ -105,16 +105,7 @@ async def run_bot(
     llm.register_function("cancel_order", tools._handle_cancel)
     llm.register_function("change_delivery_address", tools._handle_change_address)
 
-   
-
-    
-    
-     # register handlers with the LLM service
-    llm.register_function("get_order_details", tools._handle_get_order)
-    llm.register_function("get_order_status", tools._handle_get_status)
-    llm.register_function("cancel_order", tools._handle_cancel)
-    llm.register_function("change_delivery_address", tools._handle_change_address)
-    
+ 
     messages = [
             {
                 "role": "user",
@@ -146,6 +137,7 @@ async def run_bot(
             enable_metrics=True,
             enable_usage_metrics=True,
         ),
+        enable_turn_tracking=True,
         enable_tracing=True,
         conversation_id=call_sid
     )
