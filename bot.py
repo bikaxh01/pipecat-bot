@@ -20,12 +20,14 @@ from pipecat.transports.network.fastapi_websocket import (
     FastAPIWebsocketParams,
     FastAPIWebsocketTransport,
 )
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from pipecat.processors.metrics.sentry import SentryMetrics
 from pipecat.transcriptions.language import Language
 from pipecat.services.gemini_multimodal_live.gemini import (
     GeminiMultimodalLiveLLMService,
 
 )
+from pipecat.utils.tracing.setup import setup_tracing
 
 from pipecat.adapters.schemas.tools_schema import ToolsSchema
 import tools
@@ -36,19 +38,25 @@ import sentry_sdk
 
 sentry_sdk.init(
     dsn="https://9c02693b0e523afa657bc73ec4355eb7@o4509937834328064.ingest.de.sentry.io/4509937839571024",
-    traces_sample_rate=1.0,
+    traces_sample_rate=1.0,)
 
+
+otlp_exporter = OTLPSpanExporter(
+   
 )
 
 logger.remove(0)
 logger.add(sys.stderr, level="DEBUG")
-
+setup_tracing(
+        service_name="pipecat-agent",
+        exporter=otlp_exporter,
+        console_export=bool(os.getenv("OTEL_CONSOLE_EXPORT")),
+    )
 
 async def run_bot(
     websocket_client,
     stream_sid: str,
-    call_sid: str,
-    language:str
+    call_sid: str
 ):
     serializer = ExotelFrameSerializer(
         stream_sid=stream_sid,
@@ -89,23 +97,7 @@ async def run_bot(
             metrics = SentryMetrics(),
         )
 
-    # session_properties = SessionProperties(
-    #     input_audio_transcription=InputAudioTranscription(),
-    #     # modalities=["audio"],
-    #     turn_detection=SemanticTurnDetection(),
-      
-    #     # instructions=EN_PROMPT if language == "en" else HI_PROMPT ,
-    #     instructions=EN_PROMPT ,
-    # )
-     
-     
-    # llm = OpenAIRealtimeBetaLLMService(
-    #     api_key=os.getenv("OPENAI_API_KEY"),
-    #     session_properties=session_properties,
-    #     start_audio_paused=False,
-    #     model="gpt-realtime-2025-08-28"
-    #     # model="gpt-4o-mini-realtime-preview-2024-12-17"
-    # )
+  
 
         # register handlers with the LLM service
     llm.register_function("get_order_details", tools._handle_get_order)
@@ -113,19 +105,8 @@ async def run_bot(
     llm.register_function("cancel_order", tools._handle_cancel)
     llm.register_function("change_delivery_address", tools._handle_change_address)
 
-
-    session = aiohttp.ClientSession()
-
-    tts = SarvamTTSService(
-            api_key=os.getenv("SARVAM_API_KEY"),
-            aiohttp_session=session,
-            params=SarvamTTSService.InputParams(language=Language.HI if language =="hi" else Language.EN),
-            sample_rate=8000,
-            voice_id="manisha"
-        )
-
    
-     # register handlers with the LLM service
+
     
     
      # register handlers with the LLM service
@@ -143,11 +124,8 @@ async def run_bot(
     
       # For Gemini
     context = OpenAILLMContext(messages)
-    # context = OpenAILLMContext(messages,tools= tools_schema)
-    context_aggregator = llm.create_context_aggregator(context)
 
-    # rtvi = RTVIProcessor(config=RTVIConfig(config=[]))
-    
+    context_aggregator = llm.create_context_aggregator(context)
 
     pipeline = Pipeline(
         [
@@ -168,6 +146,8 @@ async def run_bot(
             enable_metrics=True,
             enable_usage_metrics=True,
         ),
+        enable_tracing=True,
+        conversation_id=call_sid
     )
 
     @transport.event_handler("on_client_connected")

@@ -25,6 +25,7 @@ app.add_middleware(
 @app.get("/")
 async def health_check():
     """Health check endpoint - Exotel doesn't use XML webhooks"""
+
     return {
         "status": "Exotel bot ready",
         "websocket_url": "wss://your-ngrok-url.ngrok.io/ws",
@@ -63,7 +64,7 @@ async def websocket_endpoint(websocket: WebSocket):
             print(f"Custom Parameters: {custom_parameters}")
 
             # Exotel uses 8kHz PCM format
-            await run_bot(websocket, stream_sid, call_sid,"hi")
+            await run_bot(websocket, stream_sid, call_sid)
         else:
             print(f"Unexpected message format: {call_data}")
 

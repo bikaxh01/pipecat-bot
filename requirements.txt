@@ -1,1 +1,2 @@
-pipecat-ai[google,silero,deepgram,runner,sarvam,openai,sentry]>=0.0.79
+pipecat-ai[google,silero,deepgram,runner,sarvam,openai,sentry,tracing]
+opentelemetry-exporter-otlp-proto-http
