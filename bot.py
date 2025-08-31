@@ -20,19 +20,11 @@ from pipecat.transports.network.fastapi_websocket import (
     FastAPIWebsocketParams,
     FastAPIWebsocketTransport,
 )
+from pipecat.processors.metrics.sentry import SentryMetrics
 from pipecat.transcriptions.language import Language
 from pipecat.services.gemini_multimodal_live.gemini import (
     GeminiMultimodalLiveLLMService,
-    InputParams,
-    GeminiMultimodalModalities,
-)
 
-from pipecat.services.openai_realtime_beta import (
-    InputAudioNoiseReduction,
-    InputAudioTranscription,
-    OpenAIRealtimeBetaLLMService,
-    SemanticTurnDetection,
-    SessionProperties,
 )
 
 from pipecat.adapters.schemas.tools_schema import ToolsSchema
@@ -40,6 +32,13 @@ import tools
 from prompt import PROMPT
 
 load_dotenv(override=True)
+import sentry_sdk
+
+sentry_sdk.init(
+    dsn="https://9c02693b0e523afa657bc73ec4355eb7@o4509937834328064.ingest.de.sentry.io/4509937839571024",
+    traces_sample_rate=1.0,
+
+)
 
 logger.remove(0)
 logger.add(sys.stderr, level="DEBUG")
@@ -64,6 +63,7 @@ async def run_bot(
             add_wav_header=False,
             vad_analyzer=SileroVADAnalyzer(),
             serializer=serializer,
+            
         ),
     )
 
@@ -85,7 +85,8 @@ async def run_bot(
             # system_instruction=EN_PROMPT if language == "en" else HI_PROMPT ,
             system_instruction=PROMPT  ,
             tools=tools_schema,
-            voice_id="Zephyr"
+            voice_id="Zephyr",
+            metrics = SentryMetrics(),
         )
 
     # session_properties = SessionProperties(
